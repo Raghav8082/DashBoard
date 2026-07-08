@@ -2,10 +2,14 @@ import bcrypt from 'bcrypt';
 import postgres from 'postgres';
 import { invoices, customers, revenue, users } from '../lib/placeholder-data';
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
+const sql = postgres(process.env.POSTGRES_URL!, {
+  // Use SSL in production; disable for local development where Postgres
+  // typically doesn't use SSL on localhost.
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+});
 
 async function seedUsers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+  // extension creation handled globally to avoid duplicate-extension errors
   await sql`
     CREATE TABLE IF NOT EXISTS users (
       id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -30,7 +34,7 @@ async function seedUsers() {
 }
 
 async function seedInvoices() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+  // extension creation handled globally to avoid duplicate-extension errors
 
   await sql`
     CREATE TABLE IF NOT EXISTS invoices (
@@ -56,7 +60,7 @@ async function seedInvoices() {
 }
 
 async function seedCustomers() {
-  await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
+  // extension creation handled globally to avoid duplicate-extension errors
 
   await sql`
     CREATE TABLE IF NOT EXISTS customers (
@@ -103,6 +107,11 @@ async function seedRevenue() {
 
 export async function GET() {
   try {
+    // Ensure the uuid-ossp extension exists; swallow duplicate errors.
+    await sql`DO $$ BEGIN
+      CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;`;
+
     const result = await sql.begin((sql) => [
       seedUsers(),
       seedCustomers(),
