@@ -7,10 +7,10 @@ import { useDebouncedCallback } from 'use-debounce';
 
 export default function Search({ placeholder }: { placeholder: string }) {
  const searchParams = useSearchParams();
+ const pathname = usePathname();
+ const router = useRouter();
 
  const handleSearch = useDebouncedCallback((term) => {
-      const pathname = usePathname();
-      const { replace } = useRouter();
       new URLSearchParams(searchParams).set('page', '1');
      if (term) {
       new URLSearchParams(searchParams).set('query', term);
@@ -18,7 +18,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
       new URLSearchParams(searchParams).delete('query');
     }
     
-    replace(`${pathname}?${new URLSearchParams(searchParams).toString()}`);
+    router.replace(`${pathname}?${new URLSearchParams(searchParams).toString()}`);
   }, 300);
   return (
     <div className="relative flex flex-1 flex-shrink-0">
